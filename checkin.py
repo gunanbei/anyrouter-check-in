@@ -107,7 +107,7 @@ async def get_waf_cookies_with_playwright(account_name: str, login_url: str, req
 
 				# 模拟用户行为以触发 WAF cookies 设置
 				print(f'[PROCESSING] {account_name}: Simulating user interactions...')
-				
+
 				# 滚动页面
 				await page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
 				await page.wait_for_timeout(1000)
@@ -126,7 +126,7 @@ async def get_waf_cookies_with_playwright(account_name: str, login_url: str, req
 				# 获取所有域名的 cookies
 				all_cookies = await context.cookies()
 				print(f'[INFO] {account_name}: Total cookies after interaction: {len(all_cookies)}')
-				
+
 				# 按域名分组显示 cookies
 				cookies_by_domain = {}
 				for cookie in all_cookies:
@@ -134,7 +134,7 @@ async def get_waf_cookies_with_playwright(account_name: str, login_url: str, req
 					if domain not in cookies_by_domain:
 						cookies_by_domain[domain] = []
 					cookies_by_domain[domain].append(f"{cookie.get('name')}={cookie.get('value')[:20]}...")
-				
+
 				for domain, cookie_list in cookies_by_domain.items():
 					print(f'[DEBUG] Cookies for domain {domain}: {cookie_list}')
 
@@ -142,17 +142,17 @@ async def get_waf_cookies_with_playwright(account_name: str, login_url: str, req
 				from urllib.parse import urlparse
 				parsed_url = urlparse(login_url)
 				main_domain = parsed_url.netloc
-				
+
 				# 检查是否需要尝试带点号的域名
 				waf_cookies = {}
 				for cookie in all_cookies:
 					cookie_name = cookie.get('name')
 					cookie_value = cookie.get('value')
 					cookie_domain = cookie.get('domain', '')
-					
+
 					if cookie_name in required_cookies and cookie_value is not None:
 						# 检查域名匹配（支持带点号和不带点号的域名）
-						if (cookie_domain == main_domain or 
+						if (cookie_domain == main_domain or
 						    cookie_domain == f".{main_domain}" or
 						    main_domain.endswith(cookie_domain.lstrip('.'))):
 							waf_cookies[cookie_name] = cookie_value
@@ -193,7 +193,7 @@ async def get_waf_cookies_with_playwright(account_name: str, login_url: str, req
 					print(f'[DEBUG] Page content preview: {await page.content()[:500]}')
 				except Exception as debug_err:
 					print(f'[DEBUG] Failed to get debug info: {debug_err}')
-				
+
 				await context.close()
 				return None
 
@@ -207,7 +207,7 @@ def get_user_info(client, headers, user_info_url: str):
 		print(f'[DEBUG] Response headers: {dict(response.headers)}')
 
 		# 打印原始响应内容用于调试
-		print(f'[DEBUG] Raw response content (first 500 chars): {response.text[:500]}')
+		print(f'[DEBUG] Raw response content (first 500 chars): {response.text}')
 
 		if response.status_code == 200:
 			try:
