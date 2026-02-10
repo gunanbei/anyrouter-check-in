@@ -201,6 +201,7 @@ async def get_waf_cookies_with_playwright(account_name: str, login_url: str, req
 def get_user_info(client, headers, user_info_url: str):
 	"""获取用户信息"""
 	try:
+		print("headers", headers)
 		response = client.get(user_info_url, headers=headers, timeout=30)
 		print('response===>', response)
 		print(f'[DEBUG] Response status: {response.status_code}')
