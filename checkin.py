@@ -367,7 +367,9 @@ async def check_in_account(account: AccountConfig, account_index: int, app_confi
 		}
 		print(f'当前 Provider 是 {account.provider}')
 		if account.provider == 'agentrouter':
-		    headers['Host'] = 'agentrouter.org'
+			headers['Host'] = 'agentrouter.org'
+			headers.pop('Origin', None)
+			headers['Referer'] = f'{provider_config.domain}/console/personal'
 		user_info_url = f'{provider_config.domain}{provider_config.user_info_path}'
 		user_info = get_user_info(client, headers, user_info_url)
 		if user_info and user_info.get('success'):
