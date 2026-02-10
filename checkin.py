@@ -349,6 +349,7 @@ async def check_in_account(account: AccountConfig, account_index: int, app_confi
 	client = httpx.Client(http2=True, timeout=30.0)
 
 	try:
+		print(f'all_cookies', all_cookies)
 		client.cookies.update(all_cookies)
 
 		headers = {
