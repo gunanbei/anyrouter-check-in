@@ -89,12 +89,12 @@ class AppConfig:
 			'agentrouter': ProviderConfig(
 				name='agentrouter',
 				domain='https://agentrouter.org',
-				login_path='/login',
+				login_path='/api/user/login',
 				sign_in_path=None,  # 无需签到接口，查询用户信息时自动完成签到
 				user_info_path='/api/user/self',
 				api_user_key='new-api-user',
 				bypass_method='waf_cookies',
-				waf_cookie_names=['acw_tc'],
+				waf_cookie_names=['acw_tc',"_nb_ioWEgULi","_c_WBKFRo"],
 			),
 		}
 

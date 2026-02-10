@@ -100,7 +100,7 @@ async def get_waf_cookies_with_playwright(account_name: str, login_url: str, req
 					await page.wait_for_timeout(3000)
 
 				cookies = await page.context.cookies()
-
+				print(f'[INFO] All Cookies: {cookies}')
 				waf_cookies = {}
 				for cookie in cookies:
 					cookie_name = cookie.get('name')
@@ -136,16 +136,16 @@ def get_user_info(client, headers, user_info_url: str):
 		print('response===>', response)
 		print(f'[DEBUG] Response status: {response.status_code}')
 		print(f'[DEBUG] Response headers: {dict(response.headers)}')
-		
+
 		# 打印原始响应内容用于调试
 		print(f'[DEBUG] Raw response content (first 500 chars): {response.text[:500]}')
-		
+
 		if response.status_code == 200:
 			try:
 				# 尝试解析JSON
 				data = response.json()
 				print('[INFO] Successfully parsed JSON data:', data)
-				
+
 				if data.get('success'):
 					user_data = data.get('data', {})
 					quota = round(user_data.get('quota', 0) / 500000, 2)
@@ -158,25 +158,25 @@ def get_user_info(client, headers, user_info_url: str):
 					}
 				else:
 					return {'success': False, 'error': f'API returned success=False: {data.get("message", "Unknown error")}'}
-				
+
 			except json.JSONDecodeError as json_err:
 				# JSON解析失败时的详细错误信息
 				print(f'[ERROR] JSON decode failed: {json_err}')
 				print(f'[ERROR] Response content type: {response.headers.get("content-type")}')
 				print(f'[ERROR] Response encoding: {response.encoding}')
 				print(f'[ERROR] Full response text: {response.text}')
-				
+
 				# 尝试手动清理和解析
 				try:
 					cleaned_text = response.text.strip()
 					# 移除可能的BOM
 					if cleaned_text.startswith('\ufeff'):
 						cleaned_text = cleaned_text[1:]
-					
+
 					# 尝试解析清理后的内容
 					data = json.loads(cleaned_text)
 					print('[INFO] Successfully parsed cleaned JSON data:', data)
-					
+
 					if data.get('success'):
 						user_data = data.get('data', {})
 						quota = round(user_data.get('quota', 0) / 500000, 2)
@@ -189,15 +189,15 @@ def get_user_info(client, headers, user_info_url: str):
 						}
 					else:
 						return {'success': False, 'error': f'API returned success=False: {data.get("message", "Unknown error")}'}
-						
+
 				except json.JSONDecodeError as clean_err:
 					return {
-						'success': False, 
+						'success': False,
 						'error': f'Failed to parse JSON even after cleaning: {str(clean_err)[:100]}...'
 					}
-				
+
 		return {'success': False, 'error': f'Failed to get user info: HTTP {response.status_code}'}
-		
+
 	except httpx.RequestError as req_err:
 		return {'success': False, 'error': f'Request failed: {str(req_err)[:100]}...'}
 	except Exception as e:
