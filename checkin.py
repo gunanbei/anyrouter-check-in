@@ -133,7 +133,7 @@ def get_user_info(client, headers, user_info_url: str):
 	"""获取用户信息"""
 	try:
 		response = client.get(user_info_url, headers=headers, timeout=30)
-
+		print('response===>',response)
 		if response.status_code == 200:
 			data = response.json()
 			print('[INFO] Successfully got user info data', data)
