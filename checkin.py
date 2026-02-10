@@ -92,32 +92,92 @@ async def get_waf_cookies_with_playwright(account_name: str, login_url: str, req
 			try:
 				print(f'[PROCESSING] {account_name}: Access login page to get initial cookies...')
 
+				# 记录初始 cookies
+				initial_cookies = await context.cookies()
+				print(f'[DEBUG] Initial cookies count: {len(initial_cookies)}')
+
 				await page.goto(login_url, wait_until='networkidle')
 
+				# 等待页面完全加载
 				try:
-					await page.wait_for_function('document.readyState === "complete"', timeout=5000)
+					await page.wait_for_function('document.readyState === "complete"', timeout=10000)
 				except Exception:
-					await page.wait_for_timeout(3000)
+					print(f'[WARNING] {account_name}: Document ready state timeout, continuing...')
+					await page.wait_for_timeout(5000)
 
-				cookies = await page.context.cookies()
-				print(f'[INFO] All Cookies: {cookies}')
+				# 模拟用户行为以触发 WAF cookies 设置
+				print(f'[PROCESSING] {account_name}: Simulating user interactions...')
+				
+				# 滚动页面
+				await page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
+				await page.wait_for_timeout(1000)
+				await page.evaluate('window.scrollTo(0, 0)')
+				await page.wait_for_timeout(1000)
+
+				# 尝试点击页面元素（如果存在）
+				try:
+					await page.click('body', timeout=2000)
+				except Exception:
+					pass
+
+				# 等待可能的 AJAX 请求完成
+				await page.wait_for_timeout(3000)
+
+				# 获取所有域名的 cookies
+				all_cookies = await context.cookies()
+				print(f'[INFO] {account_name}: Total cookies after interaction: {len(all_cookies)}')
+				
+				# 按域名分组显示 cookies
+				cookies_by_domain = {}
+				for cookie in all_cookies:
+					domain = cookie.get('domain', 'unknown')
+					if domain not in cookies_by_domain:
+						cookies_by_domain[domain] = []
+					cookies_by_domain[domain].append(f"{cookie.get('name')}={cookie.get('value')[:20]}...")
+				
+				for domain, cookie_list in cookies_by_domain.items():
+					print(f'[DEBUG] Cookies for domain {domain}: {cookie_list}')
+
+				# 如果在主域名下没有找到所有 WAF cookies，尝试获取带点号的域名cookies
+				from urllib.parse import urlparse
+				parsed_url = urlparse(login_url)
+				main_domain = parsed_url.netloc
+				
+				# 检查是否需要尝试带点号的域名
 				waf_cookies = {}
-				for cookie in cookies:
+				for cookie in all_cookies:
+					cookie_name = cookie.get('name')
+					cookie_value = cookie.get('value')
+					cookie_domain = cookie.get('domain', '')
+					
+					if cookie_name in required_cookies and cookie_value is not None:
+						# 检查域名匹配（支持带点号和不带点号的域名）
+						if (cookie_domain == main_domain or 
+						    cookie_domain == f".{main_domain}" or
+						    main_domain.endswith(cookie_domain.lstrip('.'))):
+							waf_cookies[cookie_name] = cookie_value
+							print(f'[FOUND] {account_name}: Found WAF cookie {cookie_name} from domain {cookie_domain}')
+
+				# 筛选所需的 WAF cookies
+				waf_cookies = {}
+				for cookie in all_cookies:
 					cookie_name = cookie.get('name')
 					cookie_value = cookie.get('value')
 					if cookie_name in required_cookies and cookie_value is not None:
 						waf_cookies[cookie_name] = cookie_value
+						print(f'[FOUND] {account_name}: Found WAF cookie {cookie_name}')
 
-				print(f'[INFO] {account_name}: Got {len(waf_cookies)} WAF cookies')
+				print(f'[INFO] {account_name}: Got {len(waf_cookies)} WAF cookies out of {len(required_cookies)} required')
 
 				missing_cookies = [c for c in required_cookies if c not in waf_cookies]
 
 				if missing_cookies:
 					print(f'[FAILED] {account_name}: Missing WAF cookies: {missing_cookies}')
+					print(f'[DEBUG] Available cookies: {list(waf_cookies.keys())}')
 					await context.close()
 					return None
 
-				print(f'[SUCCESS] {account_name}: Successfully got all WAF cookies')
+				print(f'[SUCCESS] {account_name}: Successfully got all WAF cookies: {list(waf_cookies.keys())}')
 
 				await context.close()
 
@@ -125,6 +185,15 @@ async def get_waf_cookies_with_playwright(account_name: str, login_url: str, req
 
 			except Exception as e:
 				print(f'[FAILED] {account_name}: Error occurred while getting WAF cookies: {e}')
+				# 打印更多调试信息
+				try:
+					current_url = page.url
+					print(f'[DEBUG] Current page URL: {current_url}')
+					print(f'[DEBUG] Page title: {await page.title()}')
+					print(f'[DEBUG] Page content preview: {await page.content()[:500]}')
+				except Exception as debug_err:
+					print(f'[DEBUG] Failed to get debug info: {debug_err}')
+				
 				await context.close()
 				return None
 
